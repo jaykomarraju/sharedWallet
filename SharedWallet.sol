@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract SharedWallet is AccessControl {
     uint256 constant votingThreshold = 51;
@@ -14,7 +13,6 @@ contract SharedWallet is AccessControl {
     struct Proposal {
         string title;
         string description;
-        address tokenAddress;
         uint256 amount;
         address payable recipient;
         uint256 deadline;
@@ -26,7 +24,7 @@ contract SharedWallet is AccessControl {
     mapping(uint256 => Proposal) public proposals;
     uint256 public proposalCounter;
     
-    event ProposalAdded(uint256 proposalId, string title, address tokenAddress, uint256 amount, address recipient);
+    event ProposalAdded(uint256 proposalId, string title, uint256 amount, address recipient);
     event VoteReceived(uint256 proposalId, address voter);
     event ProposalExecuted(uint256 proposalId, address executor);
     event OwnershipTransferred(address oldOwner, address newOwner);
@@ -38,19 +36,18 @@ contract SharedWallet is AccessControl {
         }
     }
 
-    function createProposal(string memory _title, string memory _description, address _tokenAddress, uint256 _amount, address payable _recipient) public onlyRole(OWNER_ROLE) {
-        require(IERC20(_tokenAddress).balanceOf(address(this)) >= _amount, "Insufficient balance");
+    function createProposal(string memory _title, string memory _description, uint256 _amount, address payable _recipient) public onlyRole(OWNER_ROLE) {
+        require(address(this).balance >= _amount, "Insufficient balance");
         
         Proposal storage newProposal = proposals[proposalCounter];
         newProposal.title = _title;
         newProposal.description = _description;
-        newProposal.tokenAddress = _tokenAddress;
         newProposal.amount = _amount;
         newProposal.recipient = _recipient;
         newProposal.deadline = block.timestamp + proposalExpiryTime;
         newProposal.isInitialized = true;
         
-        emit ProposalAdded(proposalCounter, _title, _tokenAddress, _amount, _recipient);
+        emit ProposalAdded(proposalCounter, _title, _amount, _recipient);
         proposalCounter++;
     }
 
@@ -67,8 +64,8 @@ contract SharedWallet is AccessControl {
         require(proposals[_proposalId].isInitialized, "Proposal does not exist");
         require(proposals[_proposalId].totalVotes * 100 / ownerCount >= votingThreshold, "Voting threshold not reached");
         require(proposals[_proposalId].deadline >= block.timestamp, "Proposal deadline has passed");
-        require(IERC20(proposals[_proposalId].tokenAddress).balanceOf(address(this)) >= proposals[_proposalId].amount, "Insufficient balance");
-        IERC20(proposals[_proposalId].tokenAddress).transfer(proposals[_proposalId].recipient, proposals[_proposalId].amount);
+        require(address(this).balance >= proposals[_proposalId].amount, "Insufficient balance");
+        proposals[_proposalId].recipient.transfer(proposals[_proposalId].amount);
         emit ProposalExecuted(_proposalId, msg.sender);
     }
 
@@ -77,5 +74,10 @@ contract SharedWallet is AccessControl {
         revokeRole(OWNER_ROLE, oldOwner);
         grantRole(OWNER_ROLE, newOwner);
         emit OwnershipTransferred(oldOwner, newOwner);
+    }
+
+    // deposit to contract function: this function can be called by any owner to deposit ether to the contract
+    function deposit() public payable {
+        require(msg.value > 0, "Deposit amount must be greater than 0");
     }
 }
