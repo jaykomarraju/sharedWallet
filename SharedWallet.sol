@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
-<!-- Factory Method: In the factory method version, we deploy a new contract instance for each shared wallet. This separates the state and functions for each wallet, which can provide isolation and security benefits but may be less efficient in terms of gas costs because of the need for repeated contract deployment. -->
+// Factory Method: In the factory method version, we deploy a new contract instance for each shared wallet. This separates the state and functions for each wallet, which can provide isolation and security benefits but may be less efficient in terms of gas costs because of the need for repeated contract deployment.
 
 contract SharedWallet is AccessControl {
     uint256 constant votingThreshold = 51;

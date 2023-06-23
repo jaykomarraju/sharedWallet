@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 
+// Single Contract Method: In the single contract version, we use a mapping to manage multiple wallets within a single contract. This approach allows us to handle multiple wallets with only a single contract deployment, which can be more gas efficient. However, the state of all wallets is contained within a single contract, so it may require more careful handling of state to ensure correctness and security.
+
 contract SharedWallets is AccessControl {
     uint256 constant votingThreshold = 51;
     uint256 constant proposalExpiryTime = 7 days;
